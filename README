@@ -1,0 +1,50 @@
+This scripts were designed for an installation at CalArts, 20 April 2006 as 
+part of my MFA studies.
+
+See http://phxom.matterwave.net/index.php?id=32 for more information.
+
+-------------------------------------------------------------------------------
+
+
+Text is laid out on a grid, one character per position.
+
+-A specified number of Like objects (let’s say 500) are created and assigned to 
+positions on the grid.
+
+-As part of its creation (and at no other time), a pattern is generated for the object, 
+determining what it ‘likes’. The object will look for this pattern in the text chunks 
+it reads. The pattern consists of 3 sequential characters from the source text with a 
+potential gap inserted between either position 1 and 2 or position 2 and 3. So, if ‘age’ 
+is selected from the source text, ‘a.*?ge’ or ‘ag.*?e’ are the possible patterns. ’.*?’ 
+means zero or more occurences of any character except newline. ‘a.*?ge’ will match 
+‘age’ and ‘a huge’.
+
+-Each object reads a specified lookahead distance (let’s say 500 characters) ahead of 
+itself in the text looking for its pattern, determining what it ‘likes’ in what it’s read. 
+If the object’s pattern is ‘a.*?ge’ and it reads ‘ice age’, it will like ‘age’. If it reads 
+‘against geometry’, it will like ‘against ge’.
+
+-If the object finds something that it likes in what it has read, it will print what it 
+liked to the screenit and move ahead in the text to the end of that last chunk it read 
+(500 characters) or will go to the beginning of the text if it is at the end.
+
+-If the object doesn’t find something that it likes in the 500 character chunk, then it is 
+unable to move. An immobile object waits for moving objects to enter its lookahead range. 
+Of the objects in proximity, it chooses the one with the highest matchcount (the one that 
+has found the most things that it likes) and copies a character from that object’s pattern 
+to replace one of the characters in its own pattern. The object mutates itself in an attempt 
+to continue progress through the text.
+
+-If all objects are motionless, the reading is finished and the program cycles to a new text.
+
+The idea is to create an environment for a text to read itself—to not only compare its potential 
+patterns to its original presentation, but to execute those potentialities. An arbitrarily 
+self-reflexive text. This project is also an attempt at modeling a system of self-regulating 
+perception.
+
+The environment consists of two programs. One running the text, objects, and sending reports 
+over a network on the activity of individual objects. The second program receives report messages 
+from the first and displays them on a different screen.
+
+
+DR April 2006

@@ -1,0 +1,25 @@
+#!/usr/local/bin/ruby -w
+
+# Dan Richert                                                                                      
+# dan.richert@gmail.com    
+
+require 'socket'
+
+HOST = "127.0.0.1"
+PORT = 12121
+
+$s = UDPSocket.new
+$s.bind(HOST, PORT)
+
+$r = UDPSocket.new
+$r.connect(HOST, PORT+1)
+
+loop do
+    $r.send("1", 0)
+    msg, sender = $s.recvfrom(3000)
+    puts msg
+    $r.send("0", 0)
+    sleep(6)
+    system('clear')
+end
+

@@ -1,0 +1,126 @@
+#!/usr/local/bin/ruby -w
+
+# Dan Richert                                            
+# dan.richert@gmail.com    
+
+require 'like_class.rb'
+require 'socket'
+
+#---network---
+$socket = UDPSocket.new
+$socket.connect("127.0.0.1", 12121)
+
+$rcvr = UDPSocket.new
+$rcvr.bind("127.0.0.1", 12122)
+
+$rcvr_ready = false
+
+#listens for signal to send object report
+Thread.new do       
+    loop do
+        msg, sender = $rcvr.recvfrom(5)
+            if msg.to_i == 1: $rcvr_ready = true end
+            if msg.to_i == 0: $rcvr_ready = false end
+    end
+end
+#-------------
+
+$num_of_objects = 500
+$lookahead = 500
+
+
+$all_texts = Dir.glob(ARGV[0]||"/Users/danrichert/books/like_texts/*")
+print $all_texts
+
+#overlapping printing
+def inplace(msg)
+        STDOUT.flush()
+        STDOUT.write(msg)
+        STDOUT.write("\010"*msg.length)
+end
+
+loop do
+    $all_texts.each do |f|
+        text = File.open(f, 'r').read
+        
+        #seed according to average of bytes in text
+        total = 0
+        text.each_byte {|b| total += b}
+        avg = total/text.length
+        srand(avg)
+                
+        likes = []
+        $num_of_objects.times do |i| 
+            #start in random positions, 3rd argument is @lookahead
+            likes.push(Like.new(text, rand(text.length), $lookahead)) 
+        end
+        
+        likes.each {|obj| obj.others = likes}
+        
+        print "\n"*300  #effectively clear screen
+        
+        ndx = 0
+        
+        loop do
+            movement_check = 0
+        
+            likes.each do |obj|
+                obj._read
+                #puts obj.ndx, obj.s
+                #puts obj.s
+                inplace(obj.s)
+                #sleep(0.02)
+                obj.move
+            end 
+        
+            #tallies moving objects
+            likes.each {|obj| if obj.can_move: movement_check += 1 end}
+        
+            #if not, exit
+            if movement_check==0: break end
+            
+            #--message--
+            o = likes[ndx]
+            
+            if o.s.length>1: liked = o.s end
+            if o.s.length==0: liked = 'None of it' end 
+            
+            if !o.can_move: motion_status = "Not Moving"
+            else motion_status = "Moving"
+            end
+            
+            if o.recently_mutated>0: mutation_status = "- Recently Mutated\n"
+            else mutation_status = ''
+            end
+            
+            if $rcvr_ready: $socket.send("
+CURRENT TEXT: #{f}
+
+OBJECT #{ndx}
+ID:             #{o.to_s}
+PATTERN:        #{o.p.source}
+POSITION:       #{o.ndx}
+THINGS LIKED:   #{o.matchcount}
+MUTATIONS:      #{o.mutations}
+
+READ:
+#{o.chunk}
+
+LIKED:
+#{liked}
+
+STATUS: 
+    - #{motion_status}
+    #{mutation_status}
+***
+
+POPULATION STATISTICS
+    NUMBER OF OBJCECTS: #{likes.length}
+    OBJECTS IN MOTION: #{movement_check}", 0) end
+                #-----------
+
+            if $rcvr_ready: ndx += 1 end
+            if ndx == likes.length: ndx = 0 end
+        end
+    end
+end
